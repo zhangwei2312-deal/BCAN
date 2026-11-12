@@ -205,7 +205,13 @@ class news_feature_extractor(nn.Module):
                     input_ids=encoding["input_ids"],
                     attention_mask=encoding["attention_mask"]
                 )
-                batch_cls = outputs.last_hidden_state[:, 0, :].cpu()
+                # Masked average pooling over token states, as specified in Eq. (1) of the paper:
+                # padding positions are excluded so the mean runs over real tokens only.
+                token_mask = encoding["attention_mask"].unsqueeze(-1).to(
+                    outputs.last_hidden_state.dtype)
+                pooled = (outputs.last_hidden_state * token_mask).sum(dim=1)
+                pooled = pooled / token_mask.sum(dim=1).clamp(min=1e-6)
+                batch_cls = pooled.cpu()
                 cls_vecs_list.append(batch_cls)
 
         cls_vecs = torch.cat(cls_vecs_list, dim=0)

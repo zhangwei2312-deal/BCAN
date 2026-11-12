@@ -10,6 +10,13 @@ submitted to *Big Data and Cognitive Computing* (manuscript BDCC-4645358).
 This repository contains the proposed model only. The baseline models compared in
 the manuscript are third-party implementations and are not redistributed here.
 
+**What is provided:** the main model, the training entry point, the backtest, the
+rolling-split utility, the reference configuration, the expected input-file layout
+and a small synthetic sample that exercises the loader.
+
+**What is not provided:** the real market panels, the news corpora and the
+pretrained encoder weights. Those have to be prepared separately; see *Data* below.
+
 ## Layout
 
 ```
@@ -30,9 +37,12 @@ utility.
 | `data_preprocessing.py` | Feature construction, static graph, targets |
 | `data_splits.py` | Rolling-window phase definition |
 | `project_paths.py` | Asset resolution and the temporal contract |
-| `run_*.py` | Convenience launcher scripts |
+| `run_*.py` | Launcher for the formal runs |
 | `core_math_contract.json` | Function-level hashes of the numerical core |
 | `VALIDATION_*.md` | What was checked locally and against the manuscript |
+
+The `verify_*.py` and `smoke_*.py` scripts referenced in `VALIDATION_*.md` were
+internal checks and are not part of this release.
 
 ## Reference configuration
 
@@ -52,6 +62,7 @@ Section 4 of the manuscript.
 | Market GRU hidden / output | 16 / 64 |
 | Shared alignment width | 64 |
 | Stock and relation GRU width | 256 |
+| Headline embedding | masked average pooling over the frozen encoder's token states (Eq. 1) |
 | Dropout | 0.4 |
 | Optimizer | Adam, lr `5e-4`, weight decay 0 |
 | Gradient clipping | 0.25 |
@@ -60,43 +71,68 @@ Section 4 of the manuscript.
 | Frozen-encoder microbatch | 32 |
 | Checkpoint selection | minimum validation MAE, eligible from epoch 1 |
 | Seed | 11380 |
-| `lambda_align` / `lambda_pcda` above; `--static-mode level` |
+| Static-graph construction | `--static-mode level` (price levels) |
 
 Rolling windows: U.S. 3 years train / 1 year validation / 1 year test, 1-year step,
 9 phases. China 36 months / 4 months / 8 months, 8-month step, 7 phases.
 
+## Install
+
+Each market directory carries its own dependency list, so install from inside it:
+
+```bash
+cd US                       # or: cd CN
+pip install -r requirements.txt
+```
+
+Install PyTorch for your CUDA version first; see the comment at the top of
+`requirements.txt`.
+
 ## Data
 
-The processed panels are **not** included in this repository.
+The real panels are not included. The loader expects four files per market, with the
+column layout used by `data_preprocessing.py` and `project_paths.py`:
+
+```
+*_price.csv              Ticker, Date, Open, High, Low, Close, Volume
+*_price_normalized.csv   the same dates with a normalized close column
+*_target.csv             Ticker, Date, target   (next-day close-to-close return)
+*_news.csv               Ticker, Date, Headlines   (headlines separated by '|')
+```
 
 * **U.S. market.** Derived from the public FNSPID dataset
-  (<https://github.com/Zdong104/FNSPID_Financial_News_Dataset>). Download it, then
-  build the four panels this code expects (`*_price.csv`, `*_price_normalized.csv`,
-  `*_target.csv`, `*_news.csv`) with the column layout documented in
-  `data_preprocessing.py` and `project_paths.py`.
+  (<https://github.com/Zdong104/FNSPID_Financial_News_Dataset>). Download it and
+  build the four panels with the column layout above.
 * **Chinese market.** Derived from CMIN-CN, Sina Finance and the Securities Times
   archive. These third-party sources are redistributed under their own terms, so the
   panels cannot be published here. Researchers with access to those sources can
-  rebuild the panels with the same column layout.
+  rebuild the panels with the same layout.
+* **Encoder weights.** U.S. runs expect a local copy of
+  `huawei-noah/TinyBERT_General_4L_312D` in `./Tinybert-4layers-en`; Chinese runs
+  expect `TinyBertZh-4L` in `./Tinybert-4layers`. Both are loaded with
+  `AutoTokenizer` / `AutoModel` and stay frozen.
 
-A small synthetic sample that exercises the loader is provided in `data_sample/`.
-It is not real market data and is only meant to let the pipeline start.
+A synthetic sample in `data_sample/` follows the same layout and lets the loader
+start. It is not real market data.
 
 Text-input copyright: the individual news articles that form the text input remain
 under the copyright of their publishers and are not redistributed.
 
-## Running
+## Run
+
+From inside a market directory:
 
 ```bash
-pip install -r requirements.txt          # install PyTorch for your CUDA version first
-
 cd US
-python run_n2m_filtered_dailyrecurrent_us.py --phase 1 --device cuda
+python run_n2m_filtered_dailyrecurrent_us.py --phases 1
+python run_n2m_filtered_dailyrecurrent_us.py --phases 1,2,3,4,5,6,7,8,9
 ```
 
-`--phase -1` runs every phase in turn. `--skip-backtest` stops after the predictive
-metrics. `--static-mode return` switches the static graph from price levels to
-training-period returns, which is the tested alternative reported in the manuscript.
+`--phases` is required and takes a comma-separated list of phase IDs (US 1-9,
+China 1-7). The launcher accepts `--device`, `--seed`, `--max-epoch`, `--wait-epoch`,
+`--lambda-align`, `--bert-batch-size`, `--batch-train`, `--bert-path` and
+`--data-dir`. Options handled inside `main_*.py`, such as `--skip-backtest` and
+`--static-mode return`, must be passed to that script rather than to the launcher.
 
 ## Outputs
 
