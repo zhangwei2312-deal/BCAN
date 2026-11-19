@@ -112,6 +112,36 @@ column layout used by `data_preprocessing.py` and `project_paths.py`:
   expect `TinyBertZh-4L` in `./Tinybert-4layers`. Both are loaded with
   `AutoTokenizer` / `AutoModel` and stay frozen.
 
+### Encoder checksums
+
+The weights were not redistributed with this repository, so the checkpoints used\
+for the reported experiments are the local copies listed below. Their architecture\
+corresponds to the upstream releases named above, and the parameter tensors are\
+unchanged; the files are local serializations, which is why their hashes differ\
+from the hashes of the upstream files. The values below are SHA-256.
+
+| Market | File                                    | Bytes      | SHA-256                                                            |
+| ------ | --------------------------------------- | ---------- | ------------------------------------------------------------------ |
+| U.S.   | `Tinybert-4layers-en/config.json`       | 409        | `9435ceadf314b412f627e32f8e27cb8db4996b6bab41e4d233da178cb39132b9` |
+| U.S.   | `Tinybert-4layers-en/pytorch_model.bin` | 62,747,391 | `84ac219f2fdab6e7f54fc6db4d7a9493708990b006d58f50cc1dceeef2a12f8a` |
+| U.S.   | `Tinybert-4layers-en/vocab.txt`         | 231,508    | `07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3` |
+| China  | `Tinybert-4layers/config.json`          | 714        | `9d2a77948bef59f07c24cc5bf394f75fe45654d7c7bdc6070eb4aebcc3a9c74b` |
+| China  | `Tinybert-4layers/model.safetensors`    | 45,689,248 | `c6892be327df420c644a4e30e93d2b82fd1f00a9a6f6bd8c33945f7ac530f1ff` |
+| China  | `Tinybert-4layers/pytorch_model.bin`    | 45,702,349 | `45fdeb288dfa504ba5039757e1fdbca8145cbc33eeb5ab3e00bc7f2eb0938a04` |
+| China  | `Tinybert-4layers/vocab.txt`            | 109,534    | `366fe2b1318c774fd28bdea58dbcfbd6d6aeae313fdcd9063d170cdc602fd51a` |
+
+For the Chinese checkpoint both a `.bin` and a `.safetensors` copy are present.\
+`AutoModel.from_pretrained` loads the safetensors file when both exist, and the two\
+copies differ from each other by 13,101 bytes, which is the `position_ids` buffer\
+that the safetensors writer stores explicitly. The parameter tensors are identical\
+in the two files.
+
+Verify locally with:
+```bash
+sha256sum Tinybert-4layers-en/config.json Tinybert-4layers-en/pytorch_model.bin Tinybert-4layers-en/vocab.txt
+sha256sum Tinybert-4layers/*.safetensors Tinybert-4layers/*.bin Tinybert-4layers/config.json Tinybert-4layers/vocab.txt
+```
+
 A synthetic sample in `data_sample/` follows the same layout and lets the loader
 start. It is not real market data.
 
