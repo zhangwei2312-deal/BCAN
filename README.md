@@ -114,10 +114,10 @@ column layout used by `data_preprocessing.py` and `project_paths.py`:
 
 ### Encoder checksums
 
-The weights were not redistributed with this repository, so the checkpoints used\
-for the reported experiments are the local copies listed below. Their architecture\
-corresponds to the upstream releases named above, and the parameter tensors are\
-unchanged; the files are local serializations, which is why their hashes differ\
+The weights were not redistributed with this repository, so the checkpoints used
+for the reported experiments are the local copies listed below. Their architecture
+corresponds to the upstream releases named above, and the parameter tensors are
+unchanged; the files are local serializations, which is why their hashes differ
 from the hashes of the upstream files. The values below are SHA-256.
 
 | Market | File                                    | Bytes      | SHA-256                                                            |
@@ -130,13 +130,14 @@ from the hashes of the upstream files. The values below are SHA-256.
 | China  | `Tinybert-4layers/pytorch_model.bin`    | 45,702,349 | `45fdeb288dfa504ba5039757e1fdbca8145cbc33eeb5ab3e00bc7f2eb0938a04` |
 | China  | `Tinybert-4layers/vocab.txt`            | 109,534    | `366fe2b1318c774fd28bdea58dbcfbd6d6aeae313fdcd9063d170cdc602fd51a` |
 
-For the Chinese checkpoint both a `.bin` and a `.safetensors` copy are present.\
-`AutoModel.from_pretrained` loads the safetensors file when both exist, and the two\
-copies differ from each other by 13,101 bytes, which is the `position_ids` buffer\
-that the safetensors writer stores explicitly. The parameter tensors are identical\
+For the Chinese checkpoint both a `.bin` and a `.safetensors` copy are present.
+`AutoModel.from_pretrained` loads the safetensors file when both exist, and the two
+copies differ from each other by 13,101 bytes, which is the `position_ids` buffer
+that the safetensors writer stores explicitly. The parameter tensors are identical
 in the two files.
 
 Verify locally with:
+
 ```bash
 sha256sum Tinybert-4layers-en/config.json Tinybert-4layers-en/pytorch_model.bin Tinybert-4layers-en/vocab.txt
 sha256sum Tinybert-4layers/*.safetensors Tinybert-4layers/*.bin Tinybert-4layers/config.json Tinybert-4layers/vocab.txt
